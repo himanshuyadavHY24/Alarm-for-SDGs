@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a3a5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SDG Alarm</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a1628;
+    color: #e8edf4;
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #e8edf4;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: #7a92b0;
+    margin-bottom: 1.5rem;
+  }
+
+  .card {
+    background: #112240;
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    border: 0.5px solid #1e3a5f;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #7a92b0;
+    margin-bottom: 12px;
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot.green { background: #1D9E75; box-shadow: 0 0 6px #1D9E75; }
+  .dot.red { background: #E24B4A; }
+  .dot.amber { background: #EF9F27; }
+
+  .status-text {
+    font-size: 14px;
+    color: #c8d8ea;
+  }
+
+  .big-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    margin-bottom: 10px;
+  }
+  .big-btn:active { transform: scale(0.97); opacity: 0.85; }
+
+  .btn-activate {
+    background: #1D9E75;
+    color: #fff;
+  }
+
+  .btn-stop {
+    background: #2a1a1a;
+    color: #E24B4A;
+    border: 1px solid #3d1f1f;
+  }
+
+  .btn-test {
+    background: #1a3a5c;
+    color: #7ab8f5;
+    border: 1px solid #1e3a5f;
+    font-size: 14px;
+    padding: 12px;
+    width: 100%;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .schedule-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .time-slot {
+    background: #0d1d35;
+    border-radius: 10px;
+    padding: 12px;
+    border: 0.5px solid #1e3a5f;
+    text-align: center;
+  }
+
+  .time-slot .time {
+    font-size: 18px;
+    font-weight: 600;
+    color: #7ab8f5;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .time-slot .label {
+    font-size: 11px;
+    color: #7a92b0;
+    margin-top: 3px;
+  }
+
+  .time-slot .sdg-badge {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #1D9E75;
+    font-weight: 500;
+  }
+
+  .sdg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .sdg-item {
+    background: #0d1d35;
+    border-radius: 8px;
+    padding: 8px 6px;
+    text-align: center;
+    border: 0.5px solid #1e3a5f;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .sdg-item:active { background: #1a3a5c; }
+
+  .sdg-num {
+    font-size: 16px;
+    font-weight: 700;
+    color: #7ab8f5;
+  }
+
+  .sdg-name {
+    font-size: 9px;
+    color: #7a92b0;
+    margin-top: 2px;
+    line-height: 1.3;
+  }
+
+  .flash {
+    background: #1a3a2a !important;
+    border-color: #1D9E75 !important;
+  }
+
+  .recall-card {
+    display: none;
+    background: #0d1d35;
+    border-radius: 14px;
+    padding: 2rem 1.25rem;
+    text-align: center;
+    border: 1px solid #1D9E75;
+    margin-bottom: 1rem;
+  }
+
+  .recall-card.show { display: block; }
+
+  .recall-numbers {
+    font-size: 56px;
+    font-weight: 800;
+    color: #7ab8f5;
+    letter-spacing: 8px;
+    margin: 0.5rem 0;
+  }
+
+  .recall-prompt {
+    font-size: 13px;
+    color: #7a92b0;
+    margin-bottom: 1rem;
+  }
+
+  .reveal-btn {
+    background: #1a3a5c;
+    color: #7ab8f5;
+    border: 1px solid #1e4a7c;
+    border-radius: 10px;
+    padding: 10px 24px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .reveal-answer {
+    margin-top: 1rem;
+    font-size: 14px;
+    color: #1D9E75;
+    font-weight: 500;
+    display: none;
+  }
+
+  .perm-warning {
+    background: #2a1a0a;
+    border: 0.5px solid #5a3a1a;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 13px;
+    color: #EF9F27;
+    margin-bottom: 1rem;
+    display: none;
+  }
+
+  .howto {
+    font-size: 12px;
+    color: #7a92b0;
+    line-height: 1.7;
+    padding: 10px 0;
+  }
+
+  .howto b { color: #c8d8ea; font-weight: 500; }
+
+  hr { border: none; border-top: 0.5px solid #1e3a5f; margin: 12px 0; }
+
+  #nextAlarmCountdown {
+    font-size: 12px;
+    color: #7a92b0;
+    text-align: center;
+    padding: 6px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>SDG Alarm</h1>
+<p class="subtitle">Spaced recall trainer — 2 random buzzes per day</p>
+
+<div class="perm-warning" id="permWarning">
+  Notification permission denied. Please enable notifications for this site in your browser settings, then reload.
+</div>
+
+<div class="recall-card" id="recallCard">
+  <p class="recall-prompt">Can you recall these SDGs?</p>
+  <div class="recall-numbers" id="recallNumbers">— —</div>
+  <p class="recall-prompt" id="recallCount"></p>
+  <button class="reveal-btn" onclick="revealAnswer()">Show answer</button>
+  <div class="reveal-answer" id="revealAnswer"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Alarm Status</div>
+
+  <div class="status-row">
+    <div class="dot" id="swDot" style="background:#7a92b0"></div>
+    <span class="status-text" id="swStatus">Checking service worker…</span>
+  </div>
+  <div class="status-row">
+    <div class="dot" id="notifDot" style="background:#7a92b0"></div>
+    <span class="status-text" id="notifStatus">Checking notification permission…</span>
+  </div>
+  <div class="status-row">
+    <div class="dot" id="alarmDot" style="background:#7a92b0"></div>
+    <span class="status-text" id="alarmStatus">Alarm not scheduled</span>
+  </div>
+
+  <hr>
+
+  <div class="schedule-grid" id="scheduleGrid" style="display:none">
+    <div class="time-slot">
+      <div class="time" id="alarm1Time">—:—</div>
+      <div class="label">First alarm</div>
+      <div class="sdg-badge" id="alarm1Sdg"></div>
+    </div>
+    <div class="time-slot">
+      <div class="time" id="alarm2Time">—:—</div>
+      <div class="label">Second alarm</div>
+      <div class="sdg-badge" id="alarm2Sdg"></div>
+    </div>
+  </div>
+
+  <div id="nextAlarmCountdown"></div>
+
+  <button class="big-btn btn-activate" id="activateBtn" onclick="activateAlarms()">
+    Activate Today's Alarms
+  </button>
+  <button class="big-btn btn-stop" id="stopBtn" onclick="stopAlarms()" style="display:none">
+    Stop Alarms
+  </button>
+  <button class="btn-test" onclick="testNow()">Test buzz now</button>
+</div>
+
+<div class="card">
+  <div class="card-title">All 17 SDGs — tap to recall</div>
+  <div class="sdg-grid" id="sdgGrid"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">How to install on Android</div>
+  <div class="howto">
+    1. Open this page in <b>Chrome</b> on your Android phone.<br>
+    2. Tap the <b>three-dot menu</b> (top right).<br>
+    3. Tap <b>"Add to Home screen"</b> → Install.<br>
+    4. Open from your home screen — it runs like a real app.<br>
+    5. Tap <b>Activate Today's Alarms</b> and allow notifications when prompted.<br>
+    6. <b>Keep Chrome running in background</b> — do not force-stop it.<br><br>
+    The alarm picks two random SDG numbers and notifies you at two random times within the day. New random times are picked each time you activate.
+  </div>
+</div>
+
+<script>
+const SDGs = {
+  1: 'No Poverty', 2: 'Zero Hunger', 3: 'Good Health & Well-being',
+  4: 'Quality Education', 5: 'Gender Equality', 6: 'Clean Water & Sanitation',
+  7: 'Affordable & Clean Energy', 8: 'Decent Work & Economic Growth',
+  9: 'Industry, Innovation & Infrastructure', 10: 'Reduced Inequalities',
+  11: 'Sustainable Cities & Communities', 12: 'Responsible Consumption & Production',
+  13: 'Climate Action', 14: 'Life Below Water', 15: 'Life on Land',
+  16: 'Peace, Justice & Strong Institutions', 17: 'Partnerships for the Goals'
+};
+
+let swReg = null;
+let alarmActive = false;
+let countdownInterval = null;
+let alarmState = null;
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function pickTwoSDGs() {
+  const a = randInt(1, 17);
+  let b = randInt(1, 17);
+  while (b === a) b = randInt(1, 17);
+  return [a, b];
+}
+
+function pickTwoTimes() {
+  const now = new Date();
+  const nowMs = now.getTime();
+  const midnight = new Date(now);
+  midnight.setHours(23, 59, 59, 999);
+  const endOfDay = midnight.getTime();
+  const remaining = endOfDay - nowMs;
+
+  if (remaining < 2 * 60 * 60 * 1000) {
+    const t1 = nowMs + randInt(5 * 60 * 1000, 20 * 60 * 1000);
+    const t2 = t1 + randInt(5 * 60 * 1000, 20 * 60 * 1000);
+    return [t1, t2];
+  }
+
+  const third = remaining / 3;
+  const t1 = nowMs + randInt(Math.floor(third * 0.2), Math.floor(third * 0.9));
+  const t2 = nowMs + randInt(Math.floor(third * 1.1), Math.floor(third * 2.8));
+  return [t1, t2].sort((a, b) => a - b);
+}
+
+function formatTime(ms) {
+  const d = new Date(ms);
+  const h = d.getHours().toString().padStart(2, '0');
+  const m = d.getMinutes().toString().padStart(2, '0');
+  return h + ':' + m;
+}
+
+function msToHuman(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return h + 'h ' + m + 'm';
+  if (m > 0) return m + 'm ' + s + 's';
+  return s + 's';
+}
+
+function saveState(state) {
+  localStorage.setItem('sdg-alarm-state', JSON.stringify(state));
+}
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('sdg-alarm-state');
+    return s ? JSON.parse(s) : null;
+  } catch { return null; }
+}
+
+function buildSDGGrid() {
+  const grid = document.getElementById('sdgGrid');
+  grid.innerHTML = '';
+  for (let i = 1; i <= 17; i++) {
+    const el = document.createElement('div');
+    el.className = 'sdg-item';
+    el.id = 'sdg-' + i;
+    el.innerHTML = `<div class="sdg-num">${i}</div><div class="sdg-name">${SDGs[i]}</div>`;
+    el.onclick = () => flashSDG(i);
+    grid.appendChild(el);
+  }
+}
+
+function flashSDG(num) {
+  showRecall([num], false);
+  const el = document.getElementById('sdg-' + num);
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 800);
+}
+
+function showRecall(sdgs, hideReveal = true) {
+  const card = document.getElementById('recallCard');
+  document.getElementById('recallNumbers').textContent = sdgs.join('  ');
+  document.getElementById('recallCount').textContent = sdgs.length === 2
+    ? 'Two random SDGs — name them both' : 'One SDG — name it';
+  const rev = document.getElementById('revealAnswer');
+  rev.style.display = 'none';
+  rev.textContent = sdgs.map(n => 'SDG ' + n + ': ' + SDGs[n]).join('\n');
+  card.classList.add('show');
+  window.currentRecallSDGs = sdgs;
+}
+
+function revealAnswer() {
+  const rev = document.getElementById('revealAnswer');
+  rev.style.display = 'block';
+}
+
+async function initSW() {
+  if (!('serviceWorker' in navigator)) {
+    setStatus('swDot', 'red', 'Service workers not supported in this browser');
+    return false;
+  }
+  try {
+    swReg = await navigator.serviceWorker.register('/sw.js');
+    setStatus('swDot', 'green', 'Service worker active');
+    return true;
+  } catch (e) {
+    setStatus('swDot', 'red', 'Service worker failed: ' + e.message);
+    return false;
+  }
+}
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) {
+    setStatus('notifDot', 'red', 'Notifications not supported');
+    document.getElementById('permWarning').style.display = 'block';
+    return false;
+  }
+  if (Notification.permission === 'granted') {
+    setStatus('notifDot', 'green', 'Notifications allowed');
+    return true;
+  }
+  if (Notification.permission === 'denied') {
+    setStatus('notifDot', 'red', 'Notifications blocked');
+    document.getElementById('permWarning').style.display = 'block';
+    return false;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    setStatus('notifDot', 'green', 'Notifications allowed');
+    return true;
+  }
+  setStatus('notifDot', 'red', 'Notifications blocked');
+  document.getElementById('permWarning').style.display = 'block';
+  return false;
+}
+
+function setStatus(dotId, color, text) {
+  const colors = { green: '#1D9E75', red: '#E24B4A', amber: '#EF9F27', gray: '#7a92b0' };
+  document.getElementById(dotId).style.background = colors[color] || colors.gray;
+  if (dotId === 'swDot') document.getElementById('swStatus').textContent = text;
+  else if (dotId === 'notifDot') document.getElementById('notifStatus').textContent = text;
+  else if (dotId === 'alarmDot') document.getElementById('alarmStatus').textContent = text;
+}
+
+function scheduleViaServiceWorker(times, sdgsPerAlarm) {
+  if (!swReg || !swReg.active) return;
+  const now = Date.now();
+  times.forEach((t, i) => {
+    const delay = Math.max(0, t - now);
+    swReg.active.postMessage({
+      type: 'SCHEDULE_ALARM',
+      delay: delay,
+      sdgs: sdgsPerAlarm[i],
+      alarmLabel: 'alarm' + (i + 1)
+    });
+  });
+}
+
+function startCountdown(times) {
+  if (countdownInterval) clearInterval(countdownInterval);
+  const el = document.getElementById('nextAlarmCountdown');
+  countdownInterval = setInterval(() => {
+    const now = Date.now();
+    const upcoming = times.filter(t => t > now).sort((a, b) => a - b);
+    if (upcoming.length === 0) {
+      el.textContent = 'All alarms fired for today.';
+      clearInterval(countdownInterval);
+      return;
+    }
+    el.textContent = 'Next alarm in: ' + msToHuman(upcoming[0] - now);
+  }, 1000);
+}
+
+async function activateAlarms() {
+  const swOk = swReg ? true : await initSW();
+  if (!swOk) return;
+
+  const notifOk = await requestNotifPermission();
+  if (!notifOk) return;
+
+  const times = pickTwoTimes();
+  const sdgs1 = pickTwoSDGs();
+  const sdgs2 = pickTwoSDGs();
+
+  const state = { times, sdgs1, sdgs2, activatedAt: Date.now() };
+  saveState(state);
+  alarmState = state;
+
+  scheduleViaServiceWorker(times, [sdgs1, sdgs2]);
+  updateUI(state);
+  startCountdown(times);
+  alarmActive = true;
+
+  document.getElementById('activateBtn').style.display = 'none';
+  document.getElementById('stopBtn').style.display = 'block';
+}
+
+function updateUI(state) {
+  const { times, sdgs1, sdgs2 } = state;
+  document.getElementById('alarm1Time').textContent = formatTime(times[0]);
+  document.getElementById('alarm2Time').textContent = formatTime(times[1]);
+  document.getElementById('alarm1Sdg').textContent = 'SDG ' + sdgs1.join(' & ');
+  document.getElementById('alarm2Sdg').textContent = 'SDG ' + sdgs2.join(' & ');
+  document.getElementById('scheduleGrid').style.display = 'grid';
+
+  const now = Date.now();
+  const fired = times.filter(t => t <= now).length;
+  if (fired === 0) {
+    setStatus('alarmDot', 'green', 'Both alarms scheduled for today');
+  } else if (fired === 1) {
+    setStatus('alarmDot', 'amber', '1 alarm fired · 1 remaining');
+  } else {
+    setStatus('alarmDot', 'gray', 'Both alarms fired for today');
+  }
+}
+
+function stopAlarms() {
+  localStorage.removeItem('sdg-alarm-state');
+  if (countdownInterval) clearInterval(countdownInterval);
+  alarmActive = false;
+  alarmState = null;
+  document.getElementById('activateBtn').style.display = 'block';
+  document.getElementById('stopBtn').style.display = 'none';
+  document.getElementById('scheduleGrid').style.display = 'none';
+  document.getElementById('nextAlarmCountdown').textContent = '';
+  setStatus('alarmDot', 'gray', 'Alarm not scheduled');
+}
+
+async function testNow() {
+  const swOk = swReg ? true : await initSW();
+  if (!swOk) { alert('Service worker not ready yet. Wait a moment and try again.'); return; }
+  const notifOk = await requestNotifPermission();
+  if (!notifOk) return;
+
+  const testSDGs = pickTwoSDGs();
+  showRecall(testSDGs);
+
+  if (swReg && swReg.active) {
+    swReg.active.postMessage({
+      type: 'SCHEDULE_ALARM',
+      delay: 2000,
+      sdgs: testSDGs,
+      alarmLabel: 'test'
+    });
+  }
+}
+
+async function init() {
+  buildSDGGrid();
+  await initSW();
+
+  if (Notification.permission === 'granted') {
+    setStatus('notifDot', 'green', 'Notifications allowed');
+  } else if (Notification.permission === 'denied') {
+    setStatus('notifDot', 'red', 'Notifications blocked');
+    document.getElementById('permWarning').style.display = 'block';
+  } else {
+    setStatus('notifDot', 'amber', 'Tap Activate to allow notifications');
+  }
+
+  const saved = loadState();
+  if (saved) {
+    const now = Date.now();
+    const allFired = saved.times.every(t => t <= now);
+    const sameDay = new Date(saved.activatedAt).toDateString() === new Date().toDateString();
+
+    if (sameDay && !allFired) {
+      alarmState = saved;
+      alarmActive = true;
+      scheduleViaServiceWorker(saved.times, [saved.sdgs1, saved.sdgs2]);
+      updateUI(saved);
+      startCountdown(saved.times);
+      document.getElementById('activateBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'block';
+    } else {
+      localStorage.removeItem('sdg-alarm-state');
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>
