@@ -100,7 +100,7 @@ Fixed alarms (e.g. 9 AM and 6 PM) become predictable, which lets your brain prep
 
 ## Why I built this
 
-Preparing for a competitive exam that requires knowing all 17 SDGs on demand. Flashcard apps require you to sit down and grind. This doesn't — it comes to you, twice a day, at times you can't predict, and asks a question you either know or you don't. After a few weeks you stop needing it.
+Just for fun. Flashcard apps require you to sit down and grind. This doesn't — it comes to you, twice a day, at times you can't predict, and asks a question you either know or you don't. After a few weeks you stop needing it.
 
 ---
 
